@@ -21,7 +21,7 @@ pg.connect()
 // 2) Buat tabel jika belum ada
 if (process.argv.includes('--initdb')) {
   const createTable = `
-    CREATE TABLE IF NOT EXISTS telemetri (
+    CREATE TABLE IF NOT EXISTS sensor_data (
       id SERIAL PRIMARY KEY,
       temperature DOUBLE PRECISION,
       humidity DOUBLE PRECISION,
@@ -30,7 +30,7 @@ if (process.argv.includes('--initdb')) {
   `;
   pg.query(createTable)
     .then(() => {
-      console.log('✅ Table telemetri siap');
+      console.log('✅ Table sensor_data siap');
       process.exit(0);
     })
     .catch(err => {
@@ -49,9 +49,9 @@ const client = mqtt.connect(mqttUrl, mqttOptions);
 
 client.on('connect', () => {
   console.log('✅ Connected to EMQX MQTT');
-  client.subscribe('sensors/telemetri', { qos: 1 }, err => {
+  client.subscribe('sensors/telemetry', { qos: 1 }, err => {
     if (err) console.error('❌ Subscribe error:', err);
-    else console.log('🔔 Subscribed to sensors/telemetri');
+    else console.log('🔔 Subscribed to sensors/telemetry');
   });
 });
 
@@ -67,20 +67,20 @@ client.on('message', async (topic, payload) => {
     const ts = timestamp || new Date().toISOString();
 
     await pg.query(
-      'INSERT INTO telemetri (temperature, humidity, timestamp) VALUES ($1, $2, $3)',
+      'INSERT INTO sensor_data (temperature, humidity, timestamp) VALUES ($1, $2, $3)',
       [temperature, humidity, ts]
     );
-    console.log(`💾 Saved telemetri: ${temperature}°C, ${humidity}%`);
+    console.log(`💾 Saved telemetry: ${temperature}°C, ${humidity}%`);
   } catch (err) {
     console.error('❌ Error processing message:', err);
   }
 });
 
 // 4) HTTP API untuk Flutter
-app.get('/api/telemetri', async (req, res) => {
+app.get('/api/telemetry', async (req, res) => {
   try {
     const { rows } = await pg.query(
-      'SELECT * FROM telemetri ORDER BY timestamp DESC LIMIT 100'
+      'SELECT * FROM telemetry ORDER BY timestamp DESC LIMIT 100'
     );
     res.json(rows);
   } catch (err) {
