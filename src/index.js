@@ -23,7 +23,6 @@ if (process.argv.includes('--initdb')) {
   const createTable = `
     CREATE TABLE IF NOT EXISTS sensor_data (
       id SERIAL PRIMARY KEY,
-      device_id TEXT NOT NULL,
       temperature DOUBLE PRECISION,
       humidity DOUBLE PRECISION,
       timestamp TIMESTAMPTZ DEFAULT NOW()
@@ -62,21 +61,16 @@ client.on('message', async (topic, payload) => {
     const data = JSON.parse(payload.toString());
     console.log('📦 Parsed data:', data);
 
-    const { device_id, temperature, humidity, timestamp } = data;
+    const { temperature, humidity, timestamp } = data;
 
-    // Validasi minimal
-    if (!device_id || temperature == null || humidity == null) {
-      console.error('❌ Missing required fields');
-      return;
-    }
-
+    // Fallback timestamp jika tidak tersedia
     const ts = timestamp || new Date().toISOString();
 
     await pg.query(
-      'INSERT INTO sensor_data (device_id, temperature, humidity, timestamp) VALUES ($1, $2, $3, $4)',
-      [device_id, temperature, humidity, ts]
+      'INSERT INTO sensor_data (temperature, humidity, timestamp) VALUES ($1, $2, $3)',
+      [temperature, humidity, ts]
     );
-    console.log(`💾 Saved data from ${device_id}: ${temperature}°C, ${humidity}%`);
+    console.log(`💾 Saved telemetry: ${temperature}°C, ${humidity}%`);
   } catch (err) {
     console.error('❌ Error processing message:', err);
   }
@@ -86,7 +80,7 @@ client.on('message', async (topic, payload) => {
 app.get('/api/telemetry', async (req, res) => {
   try {
     const { rows } = await pg.query(
-      'SELECT * FROM sensor_data ORDER BY timestamp DESC LIMIT 100'
+      'SELECT * FROM telemetry ORDER BY timestamp DESC LIMIT 100'
     );
     res.json(rows);
   } catch (err) {
