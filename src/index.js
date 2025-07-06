@@ -18,8 +18,7 @@ pg.connect()
   .then(() => console.log('✅ Connected to PostgreSQL'))
   .catch(err => console.error('❌ PostgreSQL connection error:', err));
 
-// 2) Buat tabel (sekali saja)
-// Jalankan: node src/index.js --initdb
+// 2) Buat tabel jika belum ada
 if (process.argv.includes('--initdb')) {
   const createTable = `
     CREATE TABLE IF NOT EXISTS telemetri (
@@ -57,12 +56,19 @@ client.on('connect', () => {
 });
 
 client.on('message', async (topic, payload) => {
+  console.log('📥 Received message from MQTT:', payload.toString());
   try {
     const data = JSON.parse(payload.toString());
+    console.log('📦 Parsed data:', data);
+
     const { temperature, humidity, timestamp } = data;
+
+    // Fallback timestamp jika tidak tersedia
+    const ts = timestamp || new Date().toISOString();
+
     await pg.query(
       'INSERT INTO telemetri (temperature, humidity, timestamp) VALUES ($1, $2, $3)',
-      [temperature, humidity, timestamp]
+      [temperature, humidity, ts]
     );
     console.log(`💾 Saved telemetri: ${temperature}°C, ${humidity}%`);
   } catch (err) {
