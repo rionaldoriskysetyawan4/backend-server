@@ -115,14 +115,14 @@ app.listen(port, () => {
 });
 
 // 6) Delete Telemetry
-app.delete('/api/telemetry/:id', async (req, res) => {
-  const id = req.params.id;
+app.delete('/api/telemetry', async (req, res) => {
   try {
-    await pg.query('DELETE FROM sensor_data WHERE id = $1', [id]);
-    res.json({ success: true });
+    await pg.query('DELETE FROM sensor_data');
+    res.json({ success: true, message: 'Semua data berhasil dihapus' });
   } catch (err) {
-    console.error('❌ Delete error:', err);
-    res.status(500).json({ error: 'Gagal menghapus data' });
+    console.error('❌ Error saat menghapus semua data:', err);
+    res.status(500).json({ error: 'Gagal menghapus semua data' });
   }
 });
+
 
