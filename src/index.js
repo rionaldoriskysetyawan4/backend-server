@@ -91,6 +91,23 @@ app.get('/api/telemetry', async (req, res) => {
   }
 });
 
+// 4.5) HTTP API untuk Flutter
+app.get('/api/telemetry/latest', async (req, res) => {
+  try {
+    const { rows } = await pg.query(
+      'SELECT * FROM sensor_data ORDER BY timestamp DESC LIMIT 1'
+    );
+    if (rows.length === 0) {
+      res.status(404).json({ error: 'No data' });
+    } else {
+      res.json(rows[0]);
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'DB error' });
+  }
+});
+
+
 // 5) Start server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
