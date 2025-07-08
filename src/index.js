@@ -2,9 +2,16 @@ require('dotenv').config();
 const express = require('express');
 const { Client: PgClient } = require('pg');
 const mqtt = require('mqtt');
+const cors = require('cors');
 
 const app = express();
 app.use(express.json());
+
+// ✅ Middleware CORS agar Flutter bisa akses
+app.use(cors({
+  origin: '*', // bisa ganti ke domain frontend kamu
+  methods: ['GET', 'POST', 'DELETE'],
+}));
 
 // 1) Setup PostgreSQL
 const pg = new PgClient({
@@ -14,7 +21,7 @@ const pg = new PgClient({
   password: process.env.PGPASSWORD,
   database: process.env.PGDATABASE,
 });
-//
+
 pg.connect()
   .then(() => console.log('✅ Connected to PostgreSQL'))
   .catch(err => console.error('❌ PostgreSQL connection error:', err));
@@ -30,7 +37,6 @@ if (process.argv.includes('--initdb')) {
       timestamp TIMESTAMPTZ DEFAULT NOW()
     );
   `;
-  ////
   pg.query(createTable)
     .then(() => {
       console.log('✅ Table sensor_data siap');
@@ -65,8 +71,6 @@ client.on('message', async (topic, payload) => {
     console.log('📦 Parsed data:', data);
 
     const { device_id, temperature, humidity, timestamp } = data;
-
-    // Fallback timestamp jika tidak tersedia
     const ts = timestamp || new Date().toISOString();
 
     await pg.query(
@@ -79,7 +83,7 @@ client.on('message', async (topic, payload) => {
   }
 });
 
-// 4) HTTP API untuk Flutter
+// 4) API: Get 100 terakhir
 app.get('/api/telemetry', async (req, res) => {
   try {
     const { rows } = await pg.query(
@@ -91,7 +95,7 @@ app.get('/api/telemetry', async (req, res) => {
   }
 });
 
-// 4.5) HTTP API untuk Flutter
+// 4.5) API: Get data terbaru
 app.get('/api/telemetry/latest', async (req, res) => {
   try {
     const { rows } = await pg.query(
@@ -107,17 +111,11 @@ app.get('/api/telemetry/latest', async (req, res) => {
   }
 });
 
-
-// 5) Start server
-const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`🚀 Server listening on port ${port}`);
-});
-
-// 6) Delete Telemetry
+// 6) API: Delete semua data
 app.delete('/api/telemetry', async (req, res) => {
+  console.log('📡 DELETE /api/telemetry dipanggil');
   try {
-    await pg.query('DELETE FROM sensor_data');
+    const result = await pg.query('DELETE FROM sensor_data');
     res.json({ success: true, message: 'Semua data berhasil dihapus' });
   } catch (err) {
     console.error('❌ Error saat menghapus semua data:', err);
@@ -125,4 +123,8 @@ app.delete('/api/telemetry', async (req, res) => {
   }
 });
 
-
+// 5) Start server
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`🚀 Server listening on port ${port}`);
+});
