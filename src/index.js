@@ -14,6 +14,7 @@ const pg = new PgClient({
   password: process.env.PGPASSWORD,
   database: process.env.PGDATABASE,
 });
+//
 pg.connect()
   .then(() => console.log('✅ Connected to PostgreSQL'))
   .catch(err => console.error('❌ PostgreSQL connection error:', err));
