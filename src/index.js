@@ -111,20 +111,26 @@ app.get('/api/telemetry/latest', async (req, res) => {
   }
 });
 
-// 6) API: Delete semua data
-app.delete('/api/telemetry', async (req, res) => {
-  console.log('📡 DELETE /api/telemetry dipanggil');
-  try {
-    const result = await pg.query('DELETE FROM sensor_data');
-    res.json({ success: true, message: 'Semua data berhasil dihapus' });
-  } catch (err) {
-    console.error('❌ Error saat menghapus semua data:', err);
-    res.status(500).json({ error: 'Gagal menghapus semua data' });
-  }
-});
+
 
 // 5) Start server
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`🚀 Server listening on port ${port}`);
 });
+
+
+
+
+
+// // 6) API: Delete semua data
+// app.delete('/api/telemetry', async (req, res) => {
+//   console.log('📡 DELETE /api/telemetry dipanggil');
+//   try {
+//     const result = await pg.query('DELETE FROM sensor_data');
+//     res.json({ success: true, message: 'Semua data berhasil dihapus' });
+//   } catch (err) {
+//     console.error('❌ Error saat menghapus semua data:', err);
+//     res.status(500).json({ error: 'Gagal menghapus semua data' });
+//   }
+// });
