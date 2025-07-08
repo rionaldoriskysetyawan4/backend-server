@@ -4,6 +4,7 @@
   "description": "Backend service connecting EMQX MQTT to PostgreSQL and exposing HTTP API for Flutter",
   "main": "src/index.js",
   "scripts": {
+    "reinstall": "rimraf node_modules package-lock.json && npm install",
     "start": "node src/index.js",
     "initdb": "node src/index.js --initdb"
   },
