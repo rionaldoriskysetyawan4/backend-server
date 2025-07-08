@@ -29,7 +29,7 @@ if (process.argv.includes('--initdb')) {
       timestamp TIMESTAMPTZ DEFAULT NOW()
     );
   `;
-  //
+  ////
   pg.query(createTable)
     .then(() => {
       console.log('✅ Table sensor_data siap');

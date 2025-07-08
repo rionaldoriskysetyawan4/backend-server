@@ -7,6 +7,7 @@
     "start": "node src/index.js",
     "initdb": "node src/index.js --initdb"
   },
+  
   "author": "",
   "license": "ISC",
   "dependencies": {
