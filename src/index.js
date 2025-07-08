@@ -99,7 +99,7 @@ app.get('/api/telemetry', async (req, res) => {
 app.get('/api/telemetry/latest', async (req, res) => {
   try {
     const { rows } = await pg.query(
-      'SELECT * FROM sensor_data ORDER BY timestamp DESC LIMIT 1'
+      'SELECT * FROM sensor_data ORDER BY id DESC LIMIT 1'
     );
     if (rows.length === 0) {
       res.status(404).json({ error: 'No data' });
