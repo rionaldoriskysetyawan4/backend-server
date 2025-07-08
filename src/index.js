@@ -113,3 +113,16 @@ const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`🚀 Server listening on port ${port}`);
 });
+
+// 6) Delete Telemetry
+app.delete('/api/telemetry/:id', async (req, res) => {
+  const id = req.params.id;
+  try {
+    await pg.query('DELETE FROM sensor_data WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Delete error:', err);
+    res.status(500).json({ error: 'Gagal menghapus data' });
+  }
+});
+
