@@ -74,30 +74,47 @@ const client = mqtt.connect(mqttUrl, mqttOptions);
 
 client.on('connect', () => {
   console.log('✅ Connected to EMQX MQTT');
+  //untuk ke telemetry
   client.subscribe('sensors/telemetry', { qos: 1 }, err => {
     if (err) console.error('❌ Subscribe error:', err);
     else console.log('🔔 Subscribed to sensors/telemetry');
   });
+  //untuk ke pompa
+  client.subscribe('sensors/pump', { qos: 1 }, err => {
+  if (err) console.error('❌ Subscribe error:', err);
+  else console.log('🔔 Subscribed to sensors/pump');
+});
+
 });
 
 client.on('message', async (topic, payload) => {
-  console.log('📥 Received message from MQTT:', payload.toString());
   try {
     const data = JSON.parse(payload.toString());
-    console.log('📦 Parsed data:', data);
 
-    const { device_id, templand, watertemp, ph, turbidity, humidity, timestamp } = data;
-    const ts = timestamp || new Date().toISOString();
+    if (topic === 'sensors/telemetry') {
+      const { device_id, templand, watertemp, ph, turbidity, humidity, timestamp } = data;
+      const ts = timestamp || new Date().toISOString();
+      await pg.query(
+        'INSERT INTO sensor_data (device_id, templand, watertemp, ph, turbidity, humidity, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        [device_id, templand, watertemp, ph, turbidity, humidity, ts]
+      );
+      console.log('💾 Saved telemetry data');
+    }
 
-    await pg.query(
-      'INSERT INTO sensor_data (device_id, templand, watertemp, ph, turbidity, humidity, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-      [device_id, templand, watertemp, ph, turbidity, humidity, ts]
-    );
-    console.log(`💾 Saved telemetry: ${templand}°C, ${watertemp}°C,${ph}°C,${turbidity}°C,${humidity}°C, ${humidity}%`);
+    if (topic === 'sensors/pump') {
+      const { device_id, pump1, pump2 } = data;
+      await pg.query(
+        'INSERT INTO sensor_pump (device_id, pump1, pump2, timestamp) VALUES ($1, $2, $3, NOW())',
+        [device_id, pump1, pump2]
+      );
+      console.log('💾 Saved pump data');
+    }
+
   } catch (err) {
-    console.error('❌ Error processing message:', err);
+    console.error('❌ Error processing MQTT message:', err);
   }
 });
+
 
 
 app.get('/api/pump', async (req, res) => {
