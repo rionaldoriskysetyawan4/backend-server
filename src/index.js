@@ -89,8 +89,6 @@ if (process.argv.includes('--initdb')) {
   })();
 }
 
-
-
 // 3) Setup MQTT client
 const mqttUrl = `mqtt://${process.env.EMQX_HOST}:${process.env.EMQX_PORT}`;
 const mqttOptions = {
@@ -101,7 +99,6 @@ const client = mqtt.connect(mqttUrl, mqttOptions);
 
 client.on('connect', () => {
   console.log('✅ Connected to EMQX MQTT');
-
 
   const topics = ['sensors/telemetry', 'sensors/pump', 'sensors/hour', 'sensors/minute'];
   topics.forEach(topic => {
@@ -169,7 +166,6 @@ client.on('message', async (topic, payload) => {
     console.error('❌ Error processing MQTT message:', err.message);
   }
 });
-
 
 app.get('/api/hour', async (req, res) => {
   try {
@@ -255,7 +251,6 @@ app.get('/api/pump', (req, res) => {
   }
 });
 
-
 app.post('/api/pump', async (req, res) => {
   try {
     const { device_id, pump1, pump2, timestamp } = req.body;
@@ -282,9 +277,6 @@ app.post('/api/pump', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-
-
-
 
 // 4) API: Get 100 terakhir
 app.get('/api/telemetry', async (req, res) => {
@@ -313,8 +305,6 @@ app.get('/api/telemetry/latest', async (req, res) => {
     res.status(500).json({ error: 'DB error' });
   }
 });
-
-
 
 // 5) Start server
 const port = process.env.PORT || 3000;
