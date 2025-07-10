@@ -1,11 +1,22 @@
 require('dotenv').config();
 const express = require('express');
+const { Server } = require('socket.io');
 const { Client: PgClient } = require('pg');
 const mqtt = require('mqtt');
 const cors = require('cors');
+const http = require('http');
 
 const app = express();
+const server = http.createServer(app);
 app.use(express.json());
+
+let latestPumpData = null;
+
+const io = new Server(server, {
+  cors: {
+    origin: '*'
+  }
+});
 
 // ✅ Middleware CORS agar Flutter bisa akses
 app.use(cors({
@@ -41,18 +52,34 @@ if (process.argv.includes('--initdb')) {
         timestamp TIMESTAMPTZ DEFAULT NOW()
       );
     `;
-    const createPumpTable = `
-      CREATE TABLE IF NOT EXISTS sensor_pump (
+    const createHourTable = `
+      CREATE TABLE IF NOT EXISTS hour_data (
         id SERIAL PRIMARY KEY,
         device_id TEXT NOT NULL,
-        pump1 TEXT,
-        pump2 TEXT,
+        hour1 TEXT,
+        hour2 TEXT,
+        hour3 TEXT,
+        hour4 TEXT,
+        hour5 TEXT,
+        timestamp TIMESTAMPTZ DEFAULT NOW()
+      );
+    `;
+    const createMinuteTable = `
+      CREATE TABLE IF NOT EXISTS minute_data (
+        id SERIAL PRIMARY KEY,
+        device_id TEXT NOT NULL,
+        minute1 TEXT,
+        minute2 TEXT,
+        minute3 TEXT,
+        minute4 TEXT,
+        minute5 TEXT,
         timestamp TIMESTAMPTZ DEFAULT NOW()
       );
     `;
     try {
       await pg.query(createTelemetryTable);
-      await pg.query(createPumpTable);
+      await pg.query(createHourTable);
+      await pg.query(createMinuteTable);
       console.log('✅ Kedua tabel berhasil dibuat');
       process.exit(0);
     } catch (err) {
@@ -74,75 +101,111 @@ const client = mqtt.connect(mqttUrl, mqttOptions);
 
 client.on('connect', () => {
   console.log('✅ Connected to EMQX MQTT');
-  //untuk ke telemetry
-  client.subscribe('sensors/telemetry', { qos: 1 }, err => {
-    if (err) console.error('❌ Subscribe error:', err);
-    else console.log('🔔 Subscribed to sensors/telemetry');
+
+
+  const topics = ['sensors/telemetry', 'sensors/pump', 'sensors/hour', 'sensors/minute'];
+  topics.forEach(topic => {
+    client.subscribe(topic, { qos: 1 }, err => {
+      if (err) console.error(`❌ Subscribe error for ${topic}:`, err);
+      else console.log(`🔔 Subscribed to ${topic}`);
+    });
+
   });
-  //untuk ke pompa
-  client.subscribe('sensors/pump', { qos: 1 }, err => {
-  if (err) console.error('❌ Subscribe error:', err);
-  else console.log('🔔 Subscribed to sensors/pump');
-});
 
 });
 
+// Move message handler outside of `connect`
 client.on('message', async (topic, payload) => {
   try {
     const data = JSON.parse(payload.toString());
 
     if (topic === 'sensors/telemetry') {
-      const { device_id, templand, watertemp, ph, turbidity, humidity, timestamp } = data;
+      const {
+        device_id, templand, watertemp, ph, turbidity, humidity, timestamp
+      } = data;
+
       const ts = timestamp || new Date().toISOString();
       await pg.query(
-        'INSERT INTO sensor_data (device_id, templand, watertemp, ph, turbidity, humidity, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+        `INSERT INTO sensor_data (
+          device_id, templand, watertemp, ph, turbidity, humidity, timestamp
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [device_id, templand, watertemp, ph, turbidity, humidity, ts]
       );
       console.log('💾 Saved telemetry data');
     }
 
-    if (topic === 'sensors/pump') {
-      const { device_id, pump1, pump2 } = data;
+    else if (topic === 'sensors/pump') {
+      latestPumpData = data; // ✅ simpan data terbaru
+      io.emit('pumpData', data); // 👉 kirim ke WebSocket
+      console.log('📡 Pump data sent via WebSocket:', data);
+    }
+
+
+    else if (topic === 'sensors/hour') {
+      const { device_id, hour1, hour2, hour3, hour4, hour5 } = data;
+
       await pg.query(
-        'INSERT INTO sensor_pump (device_id, pump1, pump2, timestamp) VALUES ($1, $2, $3, NOW())',
-        [device_id, pump1, pump2]
+        `INSERT INTO sensor_hour (
+          device_id, hour1, hour2, hour3, hour4, hour5, timestamp
+        ) VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+        [device_id, hour1, hour2, hour3, hour4, hour5]
       );
-      console.log('💾 Saved pump data');
+      console.log('💾 Saved hour schedule data');
+    }
+
+    else if (topic === 'sensors/minute') {
+      const { device_id, minute1, minute2, minute3, minute4, minute5 } = data;
+
+      await pg.query(
+        `INSERT INTO sensor_minute (
+          device_id, minute1, minute2, minute3, minute4, minute5, timestamp
+        ) VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+        [device_id, minute1, minute2, minute3, minute4, minute5]
+      );
+      console.log('💾 Saved hour schedule data');
     }
 
   } catch (err) {
-    console.error('❌ Error processing MQTT message:', err);
+    console.error('❌ Error processing MQTT message:', err.message);
   }
 });
 
-
-
-app.get('/api/pump', async (req, res) => {
-  try {
-    const { rows } = await pg.query(
-      'SELECT * FROM sensor_pump ORDER BY timestamp DESC LIMIT 1'
-    );
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: 'DB error' });
+app.get('/api/pump', (req, res) => {
+  if (latestPumpData) {
+    res.json(latestPumpData);
+  } else {
+    res.status(404).json({ error: 'No pump data available' });
   }
 });
+
 
 app.post('/api/pump', async (req, res) => {
   try {
-    const { device_id, pump1, pump2 } = req.body;
+    const { device_id, pump1, pump2, timestamp } = req.body;
 
-    await pg.query(
-      'INSERT INTO sensor_pump (device_id, pump1, pump2, timestamp) VALUES ($1, $2, $3, NOW())',
-      [device_id, pump1, pump2]
-    );
+    // Validasi sederhana
+    if (!device_id || pump1 == null || pump2 == null || !timestamp) {
+      return res.status(400).json({ error: 'Missing fields' });
+    }
 
-    res.json({ success: true, message: 'Data pump berhasil disimpan' });
+    // Publish ke MQTT
+    const payload = JSON.stringify({ device_id, pump1, pump2, timestamp });
+    client.publish('sensors/pump', payload, { qos: 1 }, (err) => {
+      if (err) {
+        console.error('❌ Gagal publish ke MQTT:', err);
+        return res.status(500).json({ error: 'MQTT publish error' });
+      }
+
+      console.log('📤 Data pump dikirim ke ESP32:', payload);
+      res.json({ success: true, message: 'Data pump berhasil dikirim ke ESP32' });
+    });
+
   } catch (err) {
-    console.error('❌ Error menyimpan data pump:', err);
-    res.status(500).json({ error: 'DB error' });
+    console.error('❌ Error:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 
 
