@@ -145,7 +145,7 @@ client.on('message', async (topic, payload) => {
       const { device_id, hour1, hour2, hour3, hour4, hour5 } = data;
 
       await pg.query(
-        `INSERT INTO sensor_hour (
+        `INSERT INTO hour_data (
           device_id, hour1, hour2, hour3, hour4, hour5, timestamp
         ) VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
         [device_id, hour1, hour2, hour3, hour4, hour5]
@@ -157,7 +157,7 @@ client.on('message', async (topic, payload) => {
       const { device_id, minute1, minute2, minute3, minute4, minute5 } = data;
 
       await pg.query(
-        `INSERT INTO sensor_minute (
+        `INSERT INTO minute_data (
           device_id, minute1, minute2, minute3, minute4, minute5, timestamp
         ) VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
         [device_id, minute1, minute2, minute3, minute4, minute5]
@@ -167,6 +167,83 @@ client.on('message', async (topic, payload) => {
 
   } catch (err) {
     console.error('❌ Error processing MQTT message:', err.message);
+  }
+});
+
+
+app.get('/api/hour', async (req, res) => {
+  try {
+    const { rows } = await pg.query(
+      'SELECT * FROM hour_data ORDER BY timestamp DESC LIMIT 1'
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('❌ Error saat GET /api/hour:', err);
+    res.status(500).json({ error: 'DB error' });
+  }
+});
+
+app.post('/api/hour', async (req, res) => {
+  try {
+    const { device_id, hour1, hour2, hour3, hour4, hour5, timestamp } = req.body;
+
+    if (!device_id || !timestamp) {
+      return res.status(400).json({ error: 'Missing device_id or timestamp' });
+    }
+
+    const payload = JSON.stringify({ device_id, hour1, hour2, hour3, hour4, hour5, timestamp });
+
+    client.publish('sensors/hour', payload, { qos: 1 }, (err) => {
+      if (err) {
+        console.error('❌ Gagal publish hour ke MQTT:', err);
+        return res.status(500).json({ error: 'MQTT publish error' });
+      }
+
+      console.log('📤 Data hour dikirim ke ESP32:', payload);
+      res.json({ success: true, message: 'Data hour berhasil dikirim ke ESP32' });
+    });
+
+  } catch (err) {
+    console.error('❌ Error saat POST /api/hour:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.get('/api/minute', async (req, res) => {
+  try {
+    const { rows } = await pg.query(
+      'SELECT * FROM minute_data ORDER BY timestamp DESC LIMIT 1'
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('❌ Error saat GET /api/minute:', err);
+    res.status(500).json({ error: 'DB error' });
+  }
+});
+
+app.post('/api/minute', async (req, res) => {
+  try {
+    const { device_id, minute1, minute2, minute3, minute4, minute5, timestamp } = req.body;
+
+    if (!device_id || !timestamp) {
+      return res.status(400).json({ error: 'Missing device_id or timestamp' });
+    }
+
+    const payload = JSON.stringify({ device_id, minute1, minute2, minute3, minute4, minute5, timestamp });
+
+    client.publish('sensors/minute', payload, { qos: 1 }, (err) => {
+      if (err) {
+        console.error('❌ Gagal publish minute ke MQTT:', err);
+        return res.status(500).json({ error: 'MQTT publish error' });
+      }
+
+      console.log('📤 Data minute dikirim ke ESP32:', payload);
+      res.json({ success: true, message: 'Data minute berhasil dikirim ke ESP32' });
+    });
+
+  } catch (err) {
+    console.error('❌ Error saat POST /api/minute:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
