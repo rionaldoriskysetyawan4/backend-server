@@ -56,11 +56,11 @@ if (process.argv.includes('--initdb')) {
       CREATE TABLE IF NOT EXISTS hour_data (
         id SERIAL PRIMARY KEY,
         device_id TEXT NOT NULL,
-        hour1 TEXT,
-        hour2 TEXT,
-        hour3 TEXT,
-        hour4 TEXT,
-        hour5 TEXT,
+        hour1 DOUBLE PRECISION,
+        hour2 DOUBLE PRECISION,
+        hour3 DOUBLE PRECISION,
+        hour4 DOUBLE PRECISION,
+        hour5 DOUBLE PRECISION,
         timestamp TIMESTAMPTZ DEFAULT NOW()
       );
     `;
@@ -68,11 +68,11 @@ if (process.argv.includes('--initdb')) {
       CREATE TABLE IF NOT EXISTS minute_data (
         id SERIAL PRIMARY KEY,
         device_id TEXT NOT NULL,
-        minute1 TEXT,
-        minute2 TEXT,
-        minute3 TEXT,
-        minute4 TEXT,
-        minute5 TEXT,
+        minute1 DOUBLE PRECISION,
+        minute2 DOUBLE PRECISION,
+        minute3 DOUBLE PRECISION,
+        minute4 DOUBLE PRECISION,
+        minute5 DOUBLE PRECISION,
         timestamp TIMESTAMPTZ DEFAULT NOW()
       );
     `;
