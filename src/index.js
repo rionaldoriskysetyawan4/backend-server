@@ -10,8 +10,6 @@ const app = express();
 const server = http.createServer(app);
 app.use(express.json());
 
-let latestPumpData = null;
-
 const io = new Server(server, {
   cors: {
     origin: '*'
@@ -52,6 +50,14 @@ if (process.argv.includes('--initdb')) {
         timestamp TIMESTAMPTZ DEFAULT NOW()
       );
     `;
+    const createFoodTable = `
+      CREATE TABLE IF NOT EXISTS food_data (
+        id SERIAL PRIMARY KEY,
+        device_id TEXT NOT NULL,
+        food DOUBLE PRECISION,
+        timestamp TIMESTAMPTZ DEFAULT NOW()
+      );
+    `;
     const createHourTable = `
       CREATE TABLE IF NOT EXISTS hour_data (
         id SERIAL PRIMARY KEY,
@@ -79,6 +85,7 @@ if (process.argv.includes('--initdb')) {
     try {
       await pg.query(createTelemetryTable);
       await pg.query(createHourTable);
+      await pg.query(createFoodTable);
       await pg.query(createMinuteTable);
       console.log('✅ Kedua tabel berhasil dibuat');
       process.exit(0);
@@ -100,7 +107,7 @@ const client = mqtt.connect(mqttUrl, mqttOptions);
 client.on('connect', () => {
   console.log('✅ Connected to EMQX MQTT');
 
-  const topics = ['sensors/telemetry', 'sensors/hour', 'sensors/minute'];
+  const topics = ['sensors/telemetry', 'sensors/hour', 'sensors/minute', 'sensors/food'];
   topics.forEach(topic => {
     client.subscribe(topic, { qos: 1 }, err => {
       if (err) console.error(`❌ Subscribe error for ${topic}:`, err);
@@ -131,6 +138,18 @@ client.on('message', async (topic, payload) => {
       console.log('💾 Saved telemetry data');
     }
 
+    else if (topic === 'sensors/food') {
+      const { device_id, food } = data;
+
+      await pg.query(
+        `INSERT INTO food_data (
+          device_id, food, timestamp
+        ) VALUES ($1, $2, NOW())`,
+        [device_id, food]
+      );
+      console.log('💾 Saved food schedule data');
+    }
+
     else if (topic === 'sensors/hour') {
       const { device_id, hour1, hour2, hour3, hour4, hour5 } = data;
 
@@ -152,11 +171,49 @@ client.on('message', async (topic, payload) => {
         ) VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
         [device_id, minute1, minute2, minute3, minute4, minute5]
       );
-      console.log('💾 Saved hour schedule data');
+      console.log('💾 Saved minute schedule data');
     }
 
   } catch (err) {
     console.error('❌ Error processing MQTT message:', err.message);
+  }
+});
+
+app.get('/api/food', async (req, res) => {
+  try {
+    const { rows } = await pg.query(
+      'SELECT * FROM food_data ORDER BY timestamp DESC LIMIT 1'
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error('❌ Error saat GET /api/food:', err);
+    res.status(500).json({ error: 'DB error' });
+  }
+});
+
+app.post('/api/food', async (req, res) => {
+  try {
+    const { device_id, food, timestamp } = req.body;
+
+    if (!device_id || !timestamp) {
+      return res.status(400).json({ error: 'Missing device_id or timestamp' });
+    }
+
+    const payload = JSON.stringify({ device_id, food, timestamp });
+
+    client.publish('sensors/food', payload, { qos: 1 }, (err) => {
+      if (err) {
+        console.error('❌ Gagal publish food ke MQTT:', err);
+        return res.status(500).json({ error: 'MQTT publish error' });
+      }
+
+      console.log('📤 Data food dikirim ke ESP32:', payload);
+      res.json({ success: true, message: 'Data food berhasil dikirim ke ESP32' });
+    });
+
+  } catch (err) {
+    console.error('❌ Error saat POST /api/food:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
