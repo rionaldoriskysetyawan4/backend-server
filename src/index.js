@@ -100,7 +100,7 @@ const client = mqtt.connect(mqttUrl, mqttOptions);
 client.on('connect', () => {
   console.log('✅ Connected to EMQX MQTT');
 
-  const topics = ['sensors/telemetry', 'sensors/pump', 'sensors/hour', 'sensors/minute'];
+  const topics = ['sensors/telemetry', 'sensors/hour', 'sensors/minute'];
   topics.forEach(topic => {
     client.subscribe(topic, { qos: 1 }, err => {
       if (err) console.error(`❌ Subscribe error for ${topic}:`, err);
@@ -130,13 +130,6 @@ client.on('message', async (topic, payload) => {
       );
       console.log('💾 Saved telemetry data');
     }
-
-    else if (topic === 'sensors/pump') {
-      latestPumpData = data; // ✅ simpan data terbaru
-      io.emit('pumpData', data); // 👉 kirim ke WebSocket
-      console.log('📡 Pump data sent via WebSocket:', data);
-    }
-
 
     else if (topic === 'sensors/hour') {
       const { device_id, hour1, hour2, hour3, hour4, hour5 } = data;
@@ -239,41 +232,6 @@ app.post('/api/minute', async (req, res) => {
 
   } catch (err) {
     console.error('❌ Error saat POST /api/minute:', err);
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-app.get('/api/pump', (req, res) => {
-  if (latestPumpData) {
-    res.json(latestPumpData);
-  } else {
-    res.status(404).json({ error: 'No pump data available' });
-  }
-});
-
-app.post('/api/pump', async (req, res) => {
-  try {
-    const { device_id, pump1, pump2, timestamp } = req.body;
-
-    // Validasi sederhana
-    if (!device_id || pump1 == null || pump2 == null || !timestamp) {
-      return res.status(400).json({ error: 'Missing fields' });
-    }
-
-    // Publish ke MQTT
-    const payload = JSON.stringify({ device_id, pump1, pump2, timestamp });
-    client.publish('sensors/pump', payload, { qos: 1 }, (err) => {
-      if (err) {
-        console.error('❌ Gagal publish ke MQTT:', err);
-        return res.status(500).json({ error: 'MQTT publish error' });
-      }
-
-      console.log('📤 Data pump dikirim ke ESP32:', payload);
-      res.json({ success: true, message: 'Data pump berhasil dikirim ke ESP32' });
-    });
-
-  } catch (err) {
-    console.error('❌ Error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 });
