@@ -2,7 +2,7 @@
   "name": "backend-emqx",
   "version": "1.0.0",
   "description": "Backend service connecting EMQX MQTT to PostgreSQL and exposing HTTP API for Flutter",
-  "main": "src/index.js",
+  "main": "src/server.js",
   "scripts": {
     "start": "node src/index.js",
     "initdb": "node src/index.js --initdb"
