@@ -21,5 +21,5 @@ app.use('/api/telemetry', telemetryRoutes);
 // Start server
 const port = process.env.PORT || 3000;
 server.listen(port, () => {
-  console.log(`🚀 Server running on port ${port}`);
+    console.log(`🚀 Server running on port ${port}`);
 });
