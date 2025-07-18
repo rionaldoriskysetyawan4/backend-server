@@ -5,6 +5,7 @@ const http = require('http');
 const mqtt = require('./mqtt'); // Initialize MQTT
 const foodRoutes = require('./routes/food.routes');
 const hourRoutes = require('./routes/hour.routes');
+const onlineRoutes = require('./routes/online.routes');
 const telemetryRoutes = require('./routes/telemetry.routes');
 
 const app = express();
@@ -16,6 +17,7 @@ app.use(express.json());
 // API Routes
 app.use('/api/food', foodRoutes);
 app.use('/api/hour', hourRoutes);
+app.use('/api/online', onlineRoutes);
 app.use('/api/telemetry', telemetryRoutes);
 
 // Start server

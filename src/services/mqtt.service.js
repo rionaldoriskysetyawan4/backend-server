@@ -16,8 +16,8 @@ async function handleMqttMessage(topic, payload) {
 
             console.log('💾 Telemetry data saved');
 
-        } 
-        
+        }
+
         else if (topic === 'sensors/food') {
             const { action, id, food_id, food, timestamp } = data;
 
@@ -27,7 +27,7 @@ async function handleMqttMessage(topic, payload) {
                 UPDATE food_data
                 SET food_id = $1, food = $2, timestamp = $3
                 WHERE id = $4
-    `, [food_id, food, timestamp, id]);
+            `, [food_id, food, timestamp, id]);
 
                 console.log(`✏️ Food data updated via MQTT [id: ${id}]`);
             } else {
