@@ -23,6 +23,8 @@ router.put('/:id', async (req, res) => {
     `, [time_id, hour, minute, timestamp, id]);
 
         if (rows.length === 0) return res.status(404).json({ error: 'Data not found' });
+
+        // implementasi publish data hour update
         res.json({ success: true, data: rows[0] });
 
     } catch (err) {
