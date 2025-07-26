@@ -14,13 +14,13 @@ router.get('/:id', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
     try {
-        const { time_id, hour, minute, timestamp, is_active } = req.body;
+        const { time_id, hour, minute, timestamp, isactive } = req.body;
         const id = req.params.id;
 
         const { rows } = await pg.query(`
-      UPDATE hour_data SET time_id = $1, hour = $2, minute = $3, timestamp = $4, active = $5
+      UPDATE hour_data SET time_id = $1, hour = $2, minute = $3, timestamp = $4, isactive = $5
       WHERE id = $6 RETURNING *
-    `, [time_id, hour, minute, timestamp, is_active, id]);
+    `, [time_id, hour, minute, timestamp, isactive, id]);
 
         if (rows.length === 0) return res.status(404).json({ error: 'Data not found' });
 
