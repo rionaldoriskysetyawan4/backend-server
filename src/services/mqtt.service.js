@@ -43,13 +43,13 @@ async function handleMqttMessage(topic, payload) {
         }
 
         else if (topic === 'sensors/hour') {
-            const { time_id, hour, minute } = data;
+            const { time_id, hour, minute, is_active } = data;
 
             await pg.query(`
             INSERT INTO hour_data (
-            time_id, hour, minute, timestamp
-            ) VALUES ($1, $2, $3, NOW())
-            `, [time_id, hour, minute]);
+            time_id, hour, minute, active, timestamp,
+            ) VALUES ($1, $2, $3, $4, NOW())
+            `, [time_id, hour, minute, is_active]);
 
             console.log('💾 Hour data saved');
 
