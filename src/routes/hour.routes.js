@@ -1,5 +1,6 @@
 const express = require('express');
 const pg = require('../db');
+const mqttClient = require('../mqtt'); // ✅ Pakai instance, bukan { MqttClient }
 const router = express.Router();
 
 router.get('/:id', async (req, res) => {
@@ -18,16 +19,33 @@ router.put('/:id', async (req, res) => {
         const id = req.params.id;
 
         const { rows } = await pg.query(`
-      UPDATE hour_data SET time_id = $1, hour = $2, minute = $3, timestamp = $4, isactive = $5
-      WHERE id = $6 RETURNING *
-    `, [time_id, hour, minute, timestamp, isactive, id]);
+            UPDATE hour_data SET time_id = $1, hour = $2, minute = $3, timestamp = $4, isactive = $5
+            WHERE id = $6 RETURNING *
+        `, [time_id, hour, minute, timestamp, isactive, id]);
 
         if (rows.length === 0) return res.status(404).json({ error: 'Data not found' });
 
-        // implementasi publish data hour update
-        res.json({ success: true, data: rows[0] });
+        const updatedData = rows[0];
+
+        const topic = 'sensors/hour/update';
+        const message = JSON.stringify({
+            time_id: updatedData.time_id,
+            hour: updatedData.hour,
+            minute: updatedData.minute,
+            isactive: updatedData.isactive
+        });
+
+        mqttClient.publish(topic, message, { qos: 1 }, (err) => {
+            if (err) {
+                console.error(`❌ Failed to publish to topic ${topic}:`, err);
+                return res.status(500).json({ error: 'Failed to publish update' });
+            }
+            console.log(`✅ Published hour update to topic ${topic}`);
+            res.json({ success: true, data: updatedData }); // Pindah ke sini agar hanya kirim response saat publish berhasil
+        });
 
     } catch (err) {
+        console.error('❌ DB error:', err);
         res.status(500).json({ error: 'DB error' });
     }
 });
