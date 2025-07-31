@@ -5,7 +5,7 @@ async function publishFoodData() {
     try {
         const { rows } = await pg.query(`
             SELECT * FROM food_data
-            WHERE id BETWEEN 1
+            WHERE id = 1
         `);
 
         const dataToSend = rows.map(row =>
@@ -19,12 +19,12 @@ async function publishFoodData() {
             dataToSend,
             { qos: 1, retain: true },
             err => {
-                if (err) console.error('❌ Failed to publish hour list:', err);
-                else console.log('✅ Published (retained) hour list to MQTT');
+                if (err) console.error('❌ Failed to publish food list:', err);
+                else console.log('✅ Published (retained) food list to MQTT');
             }
         );
     } catch (err) {
-        console.error('❌ Error querying hour data:', err);
+        console.error('❌ Error querying food data:', err);
     }
 }
 
