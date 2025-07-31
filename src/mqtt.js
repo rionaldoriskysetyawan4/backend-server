@@ -1,4 +1,5 @@
 // mqtt.js
+const http = require('http'); 
 const mqtt = require('mqtt');
 const { handleMqttMessage } = require('./services/mqtt.service');
 
