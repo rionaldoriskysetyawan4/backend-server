@@ -1,4 +1,5 @@
 const pg = require('../db');
+const { updateLatestData } = require('../routes/telemetry.routes');
 
 async function handleMqttMessage(topic, payload) {
     try {
