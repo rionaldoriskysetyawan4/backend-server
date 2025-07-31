@@ -2,8 +2,8 @@ const pg = require('../db');
 
 async function handleMqttMessage(topic, payload) {
     try {
-        const payload = message.toString();
-        const data = JSON.parse(payload.toString());
+        const payloadString = payload.toString();
+        const data = JSON.parse(payloadString);
 
         if (topic === 'sensors/telemetry') {
             // Misal update data terbaru dari ESP
