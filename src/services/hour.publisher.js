@@ -17,7 +17,7 @@ async function publishHourData() {
         // publish segera dan retained
         mqttClient.publish(
             topic,
-            JSON.stringify(dataToSend),
+            dataToSend,
             { qos: 1, retain: true },
             err => {
                 if (err) console.error('❌ Failed to publish hour list:', err);
