@@ -2,6 +2,7 @@ const pg = require('../db');
 
 async function handleMqttMessage(topic, payload) {
     try {
+        const payload = message.toString();
         const data = JSON.parse(payload.toString());
 
         if (topic === 'sensors/telemetry') {
@@ -9,25 +10,29 @@ async function handleMqttMessage(topic, payload) {
             updateLatestData(message);
         }
 
-        else if (topic === 'sensors/food') {
-            const { action, id, food_id, food, timestamp } = data;
+        if (topic === 'sensors/food') {
+            try {
+                const data = JSON.parse(payload);
+                const { action, id, food_id, food, timestamp } = data;
 
-            if (action === 'update') {
-                await pg.query(`
-            UPDATE food_data
-            SET food_id = $1, food = $2, timestamp = $3
-            WHERE id = $4
-        `, [food_id, food, timestamp, id]);
+                if (action === 'update') {
+                    await pg.query(`
+                    UPDATE food_data
+                    SET food_id = $1, food = $2, timestamp = $3
+                    WHERE id = $4
+                `, [food_id, food, timestamp || new Date().toISOString(), id]);
 
-                console.log(`✏️ Food data updated via MQTT [id: ${id}]`);
-            } else {
-                await pg.query(`
-            INSERT INTO food_data (
-                food_id, food, timestamp
-            ) VALUES ($1, $2, NOW())
-        `, [food_id, food]);
+                    console.log(`✏️ Food data updated via MQTT [id: ${id}]`);
+                } else {
+                    await pg.query(`
+                    INSERT INTO food_data (food_id, food, timestamp)
+                    VALUES ($1, $2, $3)
+                `, [food_id, food, timestamp || new Date().toISOString()]);
 
-                console.log('💾 New food data saved via MQTT');
+                    console.log('💾 New food data saved via MQTT');
+                }
+            } catch (err) {
+                console.error('❌ Failed to process MQTT sensors/food:', err);
             }
         }
 
