@@ -43,8 +43,8 @@ async function handleMqttMessage(topic, payload) {
 
             await pg.query(`
             INSERT INTO hour_data (
-            time_id, hour, minute, isactive, timestamp,
-            ) VALUES ($1, $2, $3, $4, NOW())
+            time_id, hour, minute, isactive, timestamp) 
+            VALUES ($1, $2, $3, $4, NOW())
             `, [time_id, hour, minute, isactive]);
 
             console.log('💾 Hour data saved');
