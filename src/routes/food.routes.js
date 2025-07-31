@@ -29,13 +29,7 @@ router.put('/:id', async (req, res) => {
         const updatedData = rows[0];
 
         const topic = 'sensors/food/update';
-        const message = JSON.stringify({
-            action: 'update',
-            id: updatedData.id,
-            food_id: updatedData.food_id,
-            food: updatedData.food,
-            timestamp: updatedData.timestamp
-        });
+        const message = `active,${updatedData.id},${updatedData.food_id},${updatedData.food},${updatedData.timestamp || new Date().toISOString()}`;
 
         mqttClient.publish(topic, message, { qos: 1 }, (err) => {
             if (err) {

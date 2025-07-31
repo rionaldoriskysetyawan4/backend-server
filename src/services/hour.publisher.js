@@ -9,24 +9,20 @@ async function publishHourData() {
             ORDER BY id ASC
         `);
 
-        const dataToSend = rows.map(row => ({
-            id: row.id,
-            time_id: row.time_id,
-            hour: row.hour,
-            minute: row.minute,
-            isactive: row.isactive
-        }));
+        const dataToSend = rows.map(row =>
+            `${row.id},${row.time_id},${row.hour},${row.minute},${row.isactive}`
+        ).join('\n');
 
         const topic = 'sensors/hour/list';
         // publish segera dan retained
         mqttClient.publish(
-          topic,
-          JSON.stringify(dataToSend),
-          { qos: 1, retain: true },
-          err => {
-            if (err) console.error('❌ Failed to publish hour list:', err);
-            else console.log('✅ Published (retained) hour list to MQTT');
-          }
+            topic,
+            JSON.stringify(dataToSend),
+            { qos: 1, retain: true },
+            err => {
+                if (err) console.error('❌ Failed to publish hour list:', err);
+                else console.log('✅ Published (retained) hour list to MQTT');
+            }
         );
     } catch (err) {
         console.error('❌ Error querying hour data:', err);
