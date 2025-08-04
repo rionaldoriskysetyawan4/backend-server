@@ -1,5 +1,5 @@
 const pg = require('../db');
-const { updateLatestData } = require('../routes/telemetry.routes');
+// const { updateLatestData } = require('../routes/telemetry.routes');
 
 async function handleMqttMessage(topic, payload) {
     try {
@@ -7,8 +7,15 @@ async function handleMqttMessage(topic, payload) {
         const data = JSON.parse(payloadString);
 
         if (topic === 'sensors/telemetry') {
-            // Misal update data terbaru dari ESP
-            updateLatestData(message);
+            const { device_id, templand, watertemp, turbidity, humidity, ph, isipakan, waterlevel } = data;
+
+            await pg.query(`
+            INSERT INTO hour_data (
+            device_id, templand, watertemp, turbidity, humidity, ph, isipakan, waterlevel, timestamp) 
+            VALUES ($1, $2, $3, $4, NOW())
+            `, [device_id, templand, watertemp, turbidity, humidity, ph, isipakan, waterlevel]);
+
+            console.log('💾 Hour data saved');
         }
 
         if (topic === 'sensors/food') {

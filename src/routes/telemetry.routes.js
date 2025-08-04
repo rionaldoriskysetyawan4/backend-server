@@ -1,51 +1,27 @@
 const express = require('express');
 const router = express.Router();
 
-// Simpan data terbaru dari ESP di sini
-let latestData = {};
-let lastUpdate = null;
-
-// Fungsi untuk mendapatkan data terbaru
-function getLatestData() {
-    return latestData;
-}
-
-// Fungsi untuk memperbarui data (panggil saat menerima data dari MQTT)
-function updateLatestData(newData) {
-    latestData = newData;
-    lastUpdate = new Date(); // simpan waktu update
-}
-
 // Route: /latest
-router.get('/latest', (req, res) => {
-    const data = getLatestData();
-    if (Object.keys(data).length === 0) {
-        return res.status(404).json({ error: 'Belum ada data' });
+router.get('/latest', async (req, res) => {
+    try {
+        const { rows } = await pg.query(
+            'SELECT * FROM sensor_data ORDER BY timestamp DESC LIMIT 1'
+        );
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'No data found' });
+        }
+        res.json(rows[0]);
+    } catch (err) {
+        console.error('❌ DB error:', err);
+        res.status(500).json({ error: 'DB error' });
     }
-    res.json(data);
 });
 
 // Route: /online
 router.get('/online', (req, res) => {
-    if (!lastUpdate) {
-        return res.status(404).json({ online: false, message: 'Belum ada data dari ESP' });
-    }
-
-    const now = new Date();
-    const diffInSeconds = (now - lastUpdate) / 1000;
-
-    // Anggap ESP online jika kirim data dalam 30 detik terakhir
-    const isOnline = diffInSeconds < 30;
-
-    res.json({
-        online: isOnline,
-        lastSeen: lastUpdate.toISOString(),
-        secondsAgo: Math.round(diffInSeconds)
-    });
 });
 
 // Export router dan fungsi update
-module.exports = {
-    router,
-    updateLatestData
-};
+// module.exports = {
+//     router,
+// };
