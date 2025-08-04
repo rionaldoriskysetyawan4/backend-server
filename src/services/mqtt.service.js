@@ -7,15 +7,16 @@ async function handleMqttMessage(topic, payload) {
         const data = JSON.parse(payloadString);
 
         if (topic === 'sensors/telemetry') {
-            const { device_id, templand, watertemp, turbidity, humidity, ph, isipakan, waterlevel } = data;
+            const { device_id, templand, watertemp, ph, turbidity, humidity, waterlevel, isipakan, timestamp } = data;
+            const ts = timestamp || new Date().toISOString();
 
             await pg.query(`
             INSERT INTO sensor_data (
-            device_id, templand, watertemp, turbidity, humidity, ph, isipakan, waterlevel, timestamp) 
-            VALUES ($1, $2, $3, $4, NOW())
-            `, [device_id, templand, watertemp, turbidity, humidity, ph, isipakan, waterlevel]);
+            device_id, templand, watertemp, ph, turbidity, humidity, waterlevel, isipakan, timestamp
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            `, [device_id, templand, watertemp, ph, turbidity, humidity, waterlevel, isipakan, ts]);
 
-            console.log('💾 Hour data saved');
+            console.log('💾 Telemetry data saved');
         }
 
         if (topic === 'sensors/food') {
