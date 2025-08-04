@@ -5,7 +5,7 @@ const http = require('http');
 const mqtt = require('./mqtt'); // Initialize MQTT
 const foodRoutes = require('./routes/food.routes');
 const hourRoutes = require('./routes/hour.routes');
-const { router: telemetryRoutes } = require('./routes/telemetry.routes');
+const telemetryRoutes = require('./routes/telemetry.routes');
 const publishHourData = require('./services/hour.publisher');
 const publishFoodData = require('./services/food.publisher');
 

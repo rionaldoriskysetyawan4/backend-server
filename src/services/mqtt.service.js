@@ -10,7 +10,7 @@ async function handleMqttMessage(topic, payload) {
             const { device_id, templand, watertemp, turbidity, humidity, ph, isipakan, waterlevel } = data;
 
             await pg.query(`
-            INSERT INTO hour_data (
+            INSERT INTO sensor_data (
             device_id, templand, watertemp, turbidity, humidity, ph, isipakan, waterlevel, timestamp) 
             VALUES ($1, $2, $3, $4, NOW())
             `, [device_id, templand, watertemp, turbidity, humidity, ph, isipakan, waterlevel]);
