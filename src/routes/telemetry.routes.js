@@ -20,7 +20,36 @@ router.get('/latest', async (req, res) => {
         res.status(500).json({ error: 'DB error' });
     }
 });
+router.post('/telemetry')async (req, res) => {
+    try {
+        const { device_id, templand, watertemp, ph, turbidity, humidity, waterlevel, isipakan } = req.body;
+        const ts = new Date(). toISOString();
 
+        await pq.query(`
+            INSERT INTO sensor_data (device_id, templand, watertempp, ph, turbidity, humidity, waterlevel, isipakan, timestamp) 
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [device_id, templand, watertemp, ph, turbidity, humidity, waterlevel, isipakan, ts]);
+        console.log("💾 Data disimpan:", turbidity);
+
+            if (turbidity > 100) {
+      const message = {
+        notification: {
+          title: "⚠️ Air Keruh Terdeteksi",
+          body: `Turbidity ${turbidity} > 100`
+        },
+        topic: "alerts"
+      };
+
+      await admin.messaging().send(message);
+      console.log("📢 Notifikasi terkirim (turbidity > 100)");
+       res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'DB error' });
+  }
+    }
+    }
+}
 router.get('/online', async (req, res) => {
     try {
         const { rows } = await pg.query(

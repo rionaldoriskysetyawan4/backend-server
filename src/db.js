@@ -6,6 +6,8 @@ const pg = new PgClient({
     user: process.env.PGUSER,
     password: process.env.PGPASSWORD,
     database: process.env.PGDATABASE,
+     connectionString: process.env.DATABASE_URL,
+       ssl: { rejectUnauthorized: false },
 });
 
 pg.connect()
