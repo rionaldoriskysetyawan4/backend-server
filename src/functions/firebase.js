@@ -1,7 +1,7 @@
 const admin = require('firebase-admin');
 
 // Ambil service account dari env variable
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
