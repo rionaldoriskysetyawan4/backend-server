@@ -1,13 +1,13 @@
 const Token = require("../models/tokenModel");
 const admin = require("../config/firebase");
-const pool = require("../config/db");
+const pg = require("../db");
 
 async function saveSensorData(req, res) {
   const { device_id, turbidity, ph, watertemp, humidity, waterlevel } = req.body;
   const ts = new Date().toISOString();
 
   try {
-    await pool.query(
+    await pg.query(
       `INSERT INTO sensor_data (device_id, turbidity, ph, watertemp, humidity, waterlevel, timestamp)
        VALUES ($1,$2,$3,$4,$5,$6,$7)`,
       [device_id, turbidity, ph, watertemp, humidity, waterlevel, ts]
