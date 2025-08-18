@@ -1,6 +1,6 @@
 const Token = require("../models/tokenModel");
 const admin = require("../config/firebase");
-const pool = require("../config/db");
+const pool = require("../db");
 
 async function saveSensorData(req, res) {
   const { device_id, turbidity, ph, watertemp, humidity, waterlevel } = req.body;
