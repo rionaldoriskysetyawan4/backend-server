@@ -19,13 +19,10 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY_BASE64) {
     throw err;
   }
 } else {
-  // fallback lokal (hanya untuk dev). Letakkan file serviceAccountKey.json di repo jika perlu.
   try {
     serviceAccount = require(path.resolve(__dirname, "../../serviceAccountKey.json"));
   } catch (err) {
-    console.error(
-      "No Firebase service account provided. Set FIREBASE_SERVICE_ACCOUNT_KEY or FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 env var."
-    );
+    console.error("No Firebase service account provided. Set FIREBASE_SERVICE_ACCOUNT_KEY_BASE64 or FIREBASE_SERVICE_ACCOUNT_KEY.");
     throw err;
   }
 }
