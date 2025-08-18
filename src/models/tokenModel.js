@@ -1,4 +1,4 @@
-const pool = require("../config/db");
+const pool = require("../db");
 
 const Token = {
   // simpan token baru (user_id optional)
