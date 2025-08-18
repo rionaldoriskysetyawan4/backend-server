@@ -8,6 +8,9 @@ const hourRoutes = require('./routes/hour.routes');
 const telemetryRoutes = require('./routes/telemetry.routes');
 const publishHourData = require('./services/hour.publisher');
 const publishFoodData = require('./services/food.publisher');
+const tokensRoute = require("./routes/tokens.routes");
+const notifRoute = require("./routes/notifications.routes");
+const sensorsRoute = require("./routes/sensors.routes");
 
 const app = express();
 const server = http.createServer(app);
@@ -26,6 +29,10 @@ setInterval(publishFoodData, 5000);
 app.use('/api/food', foodRoutes);
 app.use('/api/hour', hourRoutes);
 app.use('/api/telemetry', telemetryRoutes);
+app.use("/api", tokensRoute);
+app.use("/api", notifRoute);
+app.use("/api", sensorsRoute);
+
 
 // Start server
 const port = process.env.PORT || 3000;
