@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { registerToken } = require("../controllers/tokenController");
+const tokenController = require("../controllers/tokenController");
 
-// register FCM token ke DB
-router.post("/register-token", registerToken);
+router.post("/", tokenController.saveToken);   // simpan token dari client
+router.get("/", tokenController.getTokens);    // ambil semua token dari DB
 
 module.exports = router;

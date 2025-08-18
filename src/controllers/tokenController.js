@@ -1,27 +1,25 @@
 const Token = require("../models/tokenModel");
-const admin = require("../config/firebase");
 
-async function registerToken(req, res) {
-  const { user_id, token, subscribeToTopic } = req.body;
-  if (!token) return res.status(400).json({ error: "token required" });
-
+// simpan token baru
+exports.saveToken = async (req, res) => {
   try {
-    await Token.saveToken(user_id, token);
+    const { fcmToken } = req.body;
+    if (!fcmToken) return res.status(400).json({ error: "FCM Token required" });
 
-    // Optional: subscribe token to topic "turbidity_alert" supaya server bisa broadcast via topic
-    if (subscribeToTopic) {
-      try {
-        await admin.messaging().subscribeToTopic([token], "turbidity_alert");
-      } catch (err) {
-        console.warn("subscribeToTopic error:", err.message);
-      }
-    }
-
-    res.json({ success: true, message: "Token registered" });
+    await Token.create({ token: fcmToken }); // simpan ke DB
+    res.json({ success: true, message: "Token saved" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Failed to save token" });
   }
-}
+};
 
-module.exports = { registerToken };
+// ambil semua token
+exports.getTokens = async (req, res) => {
+  try {
+    const tokens = await Token.findAll();
+    res.json(tokens);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch tokens" });
+  }
+};
