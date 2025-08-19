@@ -17,7 +17,7 @@ app.get('/',
 // get specific hour data
 app.get('/:id',
     zValidator('param', z.object({
-        id: z.number()
+        id: z.union([z.number(), z.string().regex(/^\d+$/).transform(Number)])
     })),
     async (c) => {
         const { id } = c.req.valid('param')
