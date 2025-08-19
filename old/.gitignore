@@ -1,0 +1,4 @@
+# minimal
+node_modules/
+.env
+.env.*

@@ -1,0 +1,43 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model sensors_data {
+  id          Int      @id @default(autoincrement())
+  device_id   String
+  templand    Float
+  turbidity   Float
+  ph          Float
+  watertemp   Float
+  humidity    Float
+  isipakan    Float
+  waterlevel  Int
+  timestamp   DateTime @updatedAt
+}
+
+model food_data {
+  id          Int      @id @default(autoincrement())
+  food_id     String      
+  food        Int
+  timestamp   DateTime @updatedAt
+}
+
+model hour_data {
+  id          Int      @id @default(autoincrement())
+  time_id     String
+  hour        Int
+  minute      Int
+  isactive    Boolean
+}
