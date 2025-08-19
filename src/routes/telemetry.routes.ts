@@ -6,6 +6,8 @@ import { sendNotification } from "@/lib/notif";
 
 const app = new Hono();
 
+const notifTime: Record<string, Date> = {};
+
 // Get all sensor data (latest 100 records)
 app.get('/', async (c) => {
     try {
@@ -75,10 +77,39 @@ app.post('/telemetry',
 
             // 🚨 Cek kondisi turbidity
             if (turbidity > 100) {
-                console.log("📢 Notifikasi needed (turbidity > 100)");
-                sendNotification("⚠️ Peringatan turbidity level", 
-                    `Level turbidity telah melebihi batas aman: ${turbidity} (>100)`
-                );
+                console.log("📢 Notifikasi peringatan turbidity (turbidity > 100)");
+                // Check if it's been at least 10 minutes since the last turbidity notification
+                const now = new Date();
+                const lastNotif = notifTime['turbidity'] || new Date(0);
+                const diffInMinutes = (now.getTime() - lastNotif.getTime()) / (1000 * 60);
+                
+                if (diffInMinutes >= 10) {
+                    sendNotification("⚠️ Peringatan turbidity level", 
+                        `Level turbidity telah melebihi batas aman: ${turbidity} (>100)`
+                    );
+                    notifTime['turbidity'] = now;
+                    //console.log("📢 Notifikasi turbidity terkirim, akan dibatasi selama 10 menit");
+                } else {
+                    //console.log(`📢 Notifikasi turbidity diabaikan, masih dalam periode cooldown (${Math.round(10 - diffInMinutes)} menit tersisa)`);
+                }
+            }
+
+            // 🚨 Cek kondisi pakan habis
+            if (isipakan === 0) {
+                console.log("📢 Notifikasi peringatan pakan habis");
+                const now = new Date();
+                const lastNotif = notifTime['isipakan'] || new Date(0);
+                const diffInMinutes = (now.getTime() - lastNotif.getTime()) / (1000 * 60);
+
+                if (diffInMinutes >= 10) {
+                    sendNotification("⚠️ Peringatan pakan habis", 
+                        `Segera isi ulang pakan!`
+                    );
+                    notifTime['isipakan'] = now;
+                    //console.log("📢 Notifikasi pakan habis terkirim, akan dibatasi selama 10 menit");
+                } else {
+                    //console.log(`📢 Notifikasi pakan habis diabaikan, masih dalam periode cooldown (${Math.round(10 - diffInMinutes)} menit tersisa)`);
+                }
             }
 
             return c.json({ success: true, data: result });
