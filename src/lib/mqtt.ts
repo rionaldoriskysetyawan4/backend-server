@@ -1,5 +1,5 @@
 import mqtt, { MqttClient, IClientOptions } from 'mqtt';
-import { handleMqttMessage } from '../services/mqtt.service';
+import { handleMqttMessage } from '@/services/mqtt.service';
 
 const mqttUrl: string = `mqtt://${process.env.EMQX_HOST}:${process.env.EMQX_PORT}`;
 const mqttOptions: IClientOptions = {
@@ -7,7 +7,7 @@ const mqttOptions: IClientOptions = {
     password: process.env.EMQX_PASSWORD,
 };
 
-const client: MqttClient = mqtt.connect(mqttUrl, mqttOptions);
+export const client: MqttClient = mqtt.connect(mqttUrl, mqttOptions);
 
 client.on('connect', () => {
     console.log('✅ Connected to EMQX MQTT');

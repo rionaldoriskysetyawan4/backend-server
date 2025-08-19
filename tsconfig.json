@@ -25,10 +25,9 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
-
     "paths": {
-      "@db/*": ["generated/prisma/*"],
-      "@/*": ["src/*"]
+      "@db/*": ["./generated/prisma/*"],
+      "@/*": ["./src/*"]
     }
   }
 }

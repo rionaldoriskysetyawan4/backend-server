@@ -40,4 +40,5 @@ model hour_data {
   hour        Int
   minute      Int
   isactive    Boolean
+  timestamp   DateTime @updatedAt
 }
