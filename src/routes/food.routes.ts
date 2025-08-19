@@ -40,7 +40,7 @@ app.get('/:id',
 
 app.put('/:id',
     zValidator('param', z.object({
-        id: z.number()
+        id: z.union([z.number(), z.string().regex(/^\d+$/).transform(Number)])
     })),
     zValidator('json', z.object({
         food_id: z.optional(z.string()),
