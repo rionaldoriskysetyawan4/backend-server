@@ -1,45 +1,24 @@
-// app.js
-const mqttClient = require('../mqtt');
-const { getLatestWaterlevel } = require('./routes/actions');
+const mqttClient = require('./mqtt.service');
+const { getLatestWaterlevel } = require('../routes/action.routes');
 
-const topic = 'sensors/pump1'; // sesuai permintaan
-
-async function main() {
+async function publishPumpAction() {
   try {
     const waterlevel = await getLatestWaterlevel();
-    let pumpvalue = 0; // default matikan pompa
 
-    if (waterlevel === null) {
-      console.log('❌ No waterlevel data found');
-      return;
-    }
+    if (waterlevel !== null) {
+      console.log('📡 PumpAction Publisher - waterlevel:', waterlevel);
 
-    // Logika kontrol pompa
-    if (waterlevel > 1500) {
-      pumpvalue = 1; // nyalakan pompa
+      // publish ke topic
+      mqttClient.publish('smfish/waterlevel', JSON.stringify({ waterlevel }));
     } else {
-      pumpvalue = 0; // matikan pompa
+      console.log('⚠️ Tidak ada data waterlevel');
     }
-
-    // Payload sesuai format yang kamu minta
-    const dataToSend = JSON.stringify({ pump1: pumpvalue });
-
-    // Publish ke MQTT
-    mqttClient.publish(
-      topic,
-      dataToSend,
-      { qos: 1, retain: true },
-      err => {
-        if (err) {
-          console.error('❌ Failed to publish data:', err);
-        } else {
-          console.log(`✅ Published to MQTT (${topic}):`, dataToSend);
-        }
-      }
-    );
   } catch (err) {
-    console.error('❌ Gagal ambil waterlevel:', err.message || err);
+    console.error('❌ Error in pumpaction.publisher:', err.message);
   }
 }
 
-main();
+// otomatis tiap 5 detik
+setInterval(publishPumpAction, 5000);
+
+module.exports = publishPumpAction;
