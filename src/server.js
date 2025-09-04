@@ -8,6 +8,7 @@ const hourRoutes = require('./routes/hour.routes');
 const telemetryRoutes = require('./routes/telemetry.routes');
 const publishHourData = require('./services/hour.publisher');
 const publishFoodData = require('./services/food.publisher');
+const pumpActionPublisher = require('./services/pumpaction.publisher');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,9 +19,11 @@ app.use(express.json());
 // jalanin sekali saat startup
 publishHourData();
 publishFoodData();
+pumpActionPublisher();
 // terus setiap 5 detik (ubah ke 1000ms kalau mau tiap detik)
 setInterval(publishHourData, 5000);
 setInterval(publishFoodData, 5000);
+setInterval(pumpActionPublisher, 5000);
 
 // API Routes
 app.use('/api/food', foodRoutes);
