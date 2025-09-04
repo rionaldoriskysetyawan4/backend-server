@@ -1,6 +1,6 @@
 // app.js
 const mqttClient = require('../mqtt');
-const { getLatestWaterlevel } = require('./services/getLatestWaterlevel');
+const { getLatestWaterlevel } = require('./routes/actions.routes');
 
 const topic = 'sensors/pump1'; // sesuai permintaan
 
