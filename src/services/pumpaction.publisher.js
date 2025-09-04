@@ -1,66 +1,71 @@
 // src/services/pumpaction.publisher.js
-const { getLatestWaterlevel } = require('../routes/action.routes'); // pastikan path benar
-const mqttClient = require('../mqtt'); // sesuaikan path ke file mqtt.js yang meng-export client
+const mqttClient = require('../mqtt'); // pastikan ini meng-export client mqtt
+const { getLatestWaterlevel } = require('../routes/action.routes');
 
 const topic = 'sensors/pump1';
+const intervalMs = 5000; // cek tiap 5 detik (ubah kalau perlu)
 
+// state terakhir untuk mencegah spam
+let lastPumpValue = null;
+
+/**
+ * Publish only when pump value changes.
+ */
 async function publishPumpAction() {
   try {
-    // ambil data dari route/service yang sudah ada
     const waterlevel = await getLatestWaterlevel();
-    console.log('[pumpaction] fetched waterlevel:', waterlevel);
-
+    // jika tidak ada data, skip
     if (waterlevel === null || waterlevel === undefined) {
-      console.log('[pumpaction] ⚠️ no waterlevel data - skipping publish');
+      console.log('[pumpaction] ⚠️ no waterlevel - skip');
       return;
     }
 
-    // Pastikan numeric (hindari string/format aneh)
     const wlNum = Number(waterlevel);
     if (Number.isNaN(wlNum)) {
-      console.error('[pumpaction] ❌ waterlevel is not a number:', waterlevel);
+      console.error('[pumpaction] ❌ waterlevel not a number:', waterlevel);
       return;
     }
 
-    // logika kontrol pompa
-    const pumpvalue = wlNum > 1500 ? 1 : 0;
-    const payload = JSON.stringify({ pump1: pumpvalue });
+    // logika kontrol pompa (ubah threshold kalau perlu)
+    const pumpValue = wlNum > 1500 ? 1 : 0;
 
-    // cek mqttClient
+    // hanya publish jika berubah (atau pertama kali lastPumpValue === null)
+    if (lastPumpValue === pumpValue) {
+      // tidak publish → menghindari spam
+      // (hapus/koment log ini jika ingin silent)
+      console.log(`[pumpaction] no change (pump=${pumpValue}) - skip publish`);
+      return;
+    }
+
+    // siapkan payload
+    const payload = JSON.stringify({ pump1: pumpValue });
+
+    // pastikan mqtt client valid
     if (!mqttClient || typeof mqttClient.publish !== 'function') {
-      console.error('[pumpaction] ❌ mqttClient not ready or incorrect export from mqtt.js');
+      console.error('[pumpaction] ❌ mqtt client not ready or incorrect export');
       return;
     }
 
-    // jika mqtt belum connect, tunggu satu kali event 'connect' lalu publish
-    if (!mqttClient.connected) {
-      console.log('[pumpaction] ⏳ MQTT not connected yet, waiting for connect...');
-      mqttClient.once('connect', () => {
-        console.log('[pumpaction] 🔌 MQTT connected, now publishing...');
-        mqttClient.publish(topic, payload, { qos: 1, retain: true }, err => {
-          if (err) console.error('[pumpaction] ❌ publish error after connect:', err);
-          else console.log(`[pumpaction] ✅ Published (after connect) ${topic}:`, payload);
-        });
-      });
-      return;
-    }
-
-    // langsung publish jika mqtt connected
+    // publish (qos 1, retained)
     mqttClient.publish(topic, payload, { qos: 1, retain: true }, err => {
       if (err) {
-        console.error('[pumpaction] ❌ Failed to publish:', err);
+        console.error('[pumpaction] ❌ publish error:', err);
       } else {
-        console.log(`[pumpaction] ✅ Published to MQTT (${topic}):`, payload);
+        console.log(`[pumpaction] ✅ Published to ${topic}:`, payload);
+        // update state hanya jika publish sukses
+        lastPumpValue = pumpValue;
       }
     });
   } catch (err) {
-    console.error('[pumpaction] ❌ Error in publishPumpAction:', err && err.message ? err.message : err);
+    console.error('[pumpaction] ❌ Error:', err && err.message ? err.message : err);
   }
 }
 
-// jalankan otomatis tiap 5 detik (atau sesuaikan)
-const intervalMs = 5000;
+// run once immediately (opsional — akan publish pertama kali)
+publishPumpAction();
+
+// interval cek berkala (tetap tidak akan spam karena cek perubahan)
 setInterval(publishPumpAction, intervalMs);
 
-// export supaya bisa dipanggil manual di testing
+// export supaya bisa di-require di index/server
 module.exports = publishPumpAction;
